@@ -1,6 +1,6 @@
 import fitz
 import os
-import numpy
+import numpy as np
 import cv2
 import pytesseract 
 from PIL import Image
@@ -23,9 +23,7 @@ def extract_graphs(pdf_path, output_folder):
             with open(f"{output_folder}/page_{page_num+1}_image_{img_index+1}.png", "wb") as img_file:
                 img_file.write(image_bytes)
 
-    # Close the PDF document
     pdf_document.close()
-
     
 
 # -----------function to extract text from graph -----------
@@ -38,12 +36,11 @@ def extract_text(text_folder,output_folder):
             text=pytesseract.image_to_string(img)
             with open(os.path.join(text_folder,f"{os.path.splitext(filename)[0]}.txt"),"w") as text_file:
                 text_file.write(text)
+                
 
 
-
-
-pdf_path = "sample3.pdf"
-output_folder = "graphs"
+pdf_path = "sample-1.pdf"
+output_folder = "sample_graphs"
 text_folder = "extracted_text"
-# extract_graphs(pdf_path,output_folder)
+extract_graphs(pdf_path,output_folder)
 extract_text(text_folder, output_folder)
