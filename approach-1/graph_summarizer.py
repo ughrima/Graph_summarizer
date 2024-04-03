@@ -44,3 +44,4 @@ output_folder = "sample_graphs"
 text_folder = "extracted_text"
 extract_graphs(pdf_path,output_folder)
 extract_text(text_folder, output_folder)
+
