@@ -1,3 +1,6 @@
+
+
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,10 +11,8 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 # Function to extract text from graph 
-def extract_text(image_file, graph_type):
+def extract_text(image_file):
     text = pytesseract.image_to_string(cv2.imread(image_file))
-
-    print("Extracted text:", text)
     return text
 
 # Function to summarize a bar graph
@@ -20,7 +21,7 @@ def summarize_bar_graph(text, bar_heights):
 
     # Extracting relevant information from text
     summary_sentences = []
-    x_axis_values=[]
+    x_axis_values = []
 
     # Extract numerical values from the text as potential Y-axis values
     y_axis_values = [int(val) for val in text.split() if val.isdigit()]
@@ -35,7 +36,7 @@ def summarize_bar_graph(text, bar_heights):
         return {
             "Title": "Bar Graph Summary",
             "Summary Sentences": ["Unable to extract categories from the graph text."],
-            "Total Sales": None
+            "Total heights": None
         }
 
     if not y_axis_values:
@@ -43,18 +44,19 @@ def summarize_bar_graph(text, bar_heights):
         return {
             "Title": "Bar Graph Summary",
             "Summary Sentences": ["Unable to extract valid Y-axis values from the graph text."],
-            "Total Sales": None
+            "Total heights": None
         }
 
-    # Calculate the total sales
-    total_sales = sum(y_axis_values)
+    # Calculate the total heights
+    total_heights = sum(y_axis_values)
 
     # Generate summary sentences for each category
     for i, category in enumerate(categories):
+        # Append the summary sentence with the reversed bar height
         summary_sentences.append(f"{category} has the corresponding bar height = {bar_heights[i]} on the Y-axis")
+        # Append the X-axis value
         x_axis_values.append(f"{category}")
-
-    summary_sentences.append(f"Total Sales: {total_sales}")
+    summary_sentences.append(f"Total heights (in terms of Y axis): {total_heights}")
 
     summary_info = {
         "Title": "Bar Graph Summary",
@@ -90,45 +92,69 @@ def generate_pdf_report(summary_info, pdf_filename):
     # Save the PDF file
     c.save()
 
-# Load the image
-image = cv2.imread('bargraph.png')
+if __name__ == "__main__":
+    # Parse command-line arguments
+    if len(sys.argv) != 4:
+        print("Usage: python abc.py summarize graph_type image.png")
+        sys.exit(1)
 
-# Convert BGR to HSV
-hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    _, action, graph_type, image_file = sys.argv
 
-# Define range of blue color in HSV
-lower_blue = np.array([100, 50, 50])
-upper_blue = np.array([140, 255, 255])
+    # Load the image
+    image = cv2.imread(image_file)
 
-# Threshold the HSV image to get only blue colors
-mask = cv2.inRange(hsv, lower_blue, upper_blue)
+    # Convert BGR to HSV
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-# Bitwise-AND mask and original image
-blue_bars = cv2.bitwise_and(image, image, mask=mask)
+    # Define range of blue color in HSV
+    lower_blue = np.array([100, 50, 50])
+    upper_blue = np.array([140, 255, 255])
 
-# Convert the blue bars image to grayscale
-gray = cv2.cvtColor(blue_bars, cv2.COLOR_BGR2GRAY)
+    # Threshold the HSV image to get only blue colors
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
 
-# Apply Gaussian blur to reduce noise
-blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    # Bitwise-AND mask and original image
+    blue_bars = cv2.bitwise_and(image, image, mask=mask)
 
-# Perform Canny edge detection
-edges = cv2.Canny(blurred, 50, 150)
+    # Convert the blue bars image to grayscale
+    gray = cv2.cvtColor(blue_bars, cv2.COLOR_BGR2GRAY)
 
-# Find contours in the edge-detected image
-contours, _ = cv2.findContours(edges.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Apply Gaussian blur to reduce noise
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-# Extract heights of the bars
-bar_heights = [cv2.boundingRect(contour)[3] for contour in contours]
+    # Perform Canny edge detection
+    edges = cv2.Canny(blurred, 50, 150)
 
-# Reverse the list to match y-axis values
-bar_heights.reverse()
+    # Find contours in the edge-detected image
+    contours, _ = cv2.findContours(edges.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # Extract heights of the bars and associate them with Y-axis values
+    bar_heights = []
 
-# Extract text from the graph image
-extracted_text = extract_text('bargraph.png', 'bargraph')
+    # Set to store unique heights encountered
+    unique_heights = set()
 
-# Summarize the bar graph
-summary_info = summarize_bar_graph(extracted_text, bar_heights)
+    # Iterate over each column of the blue bars image
+    for col in range(blue_bars.shape[1]):
+        # Find the indices of non-zero elements in the column
+        indices = np.nonzero(blue_bars[:, col])[0]
+        if len(indices) > 0:
+            # Calculate the height of the bar in this column
+            bar_height = max(indices) - min(indices)
+            # Check if this height is unique
+            if bar_height not in unique_heights:
+                # Add the unique height to the list and set
+                bar_heights.append(bar_height)
+                unique_heights.add(bar_height)
 
-# Generate PDF report
-generate_pdf_report(summary_info, "graph_summary.pdf")
+    extracted_text = extract_text(image_file)
+
+    # Call the appropriate summarization function based on the specified graph type
+    if graph_type == "bargraph":
+        summary_info = summarize_bar_graph(extracted_text, bar_heights)
+    else:
+        print("Invalid graph type. Supported types: bargraph")
+        sys.exit(1)
+
+    # Generate PDF report based on the summary information
+    generate_pdf_report(summary_info, "summary_report.pdf")
