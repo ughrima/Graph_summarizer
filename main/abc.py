@@ -6,6 +6,7 @@ import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from math import floor 
 
 # Function to extract text from graph 
 def extract_text(image_file):
@@ -64,6 +65,89 @@ def summarize_bar_graph(text, bar_heights):
     }
 
     return summary_info
+
+
+# Function to summarize a bar graph
+def summarize_line_graph(text, image_file):
+
+    image = cv2.imread(image_file)
+
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Apply Canny edge detection
+    edges = cv2.Canny(gray, 50, 150)
+
+    # Detect lines using Hough Line Transform
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold=50, minLineLength=50, maxLineGap=10)
+    total_slope = 0
+    count=0
+
+    # # Calculate slope of each line
+    # if lines is not None:
+    #     for line in lines:
+    #         x1, y1, x2, y2 = line[0]
+    #         if x2 != x1:  # Avoid division by zero
+    #             slope = -((y2 - y1) / (x2 - x1))
+    #             total_slope += slope
+
+    #     average_slope = total_slope
+    #     print("Slope of line:", floor(average_slope))
+
+    # summary_sentences=[]
+
+    # summary_info = {
+    #     "Title": "Line Graph Summary",
+    #     "Summary Sentences": summary_sentences,
+    #     "Slope of Graph": floor(total_slope)
+    # }
+
+    # return summary_info
+
+
+def summarize_line_graph(text, image_file):
+    # Read the image
+    image = cv2.imread(image_file)
+    print(text)
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Apply Canny edge detection
+    edges = cv2.Canny(gray, 50, 150)
+
+    # Detect lines using Hough Line Transform
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold=50, minLineLength=50, maxLineGap=10)
+
+    total_slope = 0
+    # coordinates= [int(val) for val in text.split() if val.isdigit()]
+
+    numerical_values = [float(val) for val in text.split() if val.replace('.', '').isdigit()]
+
+    # Calculate the difference between the largest and smallest x-axis and y-axis values
+    x_diff = max(numerical_values) - min(numerical_values) if numerical_values else 0
+    y_diff = max(numerical_values) - min(numerical_values) if numerical_values else 0
+
+    # Calculate the Euclidean distance
+    euclidean_distance = np.sqrt(x_diff**2 + y_diff**2)
+
+   # Calculate slope of each line
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            if x2 != x1:  # Avoid division by zero
+                slope = -((y2 - y1) / (x2 - x1))
+                total_slope += slope
+
+
+    summary_info = {
+             "Title": "Line Graph Summary",
+            "Slope of Graph": floor(total_slope),
+            # "Coordinates":coordinates
+            "Coordinates of X and Y axis ":numerical_values,
+            "Euclidean Distance": floor(euclidean_distance/10)
+    }
+    return summary_info
+
 
 # Function to generate PDF report
 def generate_pdf_report(summary_info, pdf_filename):
@@ -149,6 +233,8 @@ if __name__ == "__main__":
     # Call the appropriate summarization function based on the specified graph type
     if graph_type == "bargraph":
         summary_info = summarize_bar_graph(extracted_text, bar_heights)
+    elif graph_type == "linegraph":
+        summary_info = summarize_line_graph(extracted_text, image_file)
     else:
         print("Invalid graph type. Supported types: bargraph")
         sys.exit(1)
