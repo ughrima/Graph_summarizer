@@ -17,7 +17,6 @@ def extract_text(image_file):
 def summarize_bar_graph(text, bar_heights):
     print("Summarizing bar graph...")  
 
-    # Extracting relevant information from text
     summary_sentences = []
     x_axis_values = []
 
@@ -50,9 +49,7 @@ def summarize_bar_graph(text, bar_heights):
 
     # Generate summary sentences for each category
     for i, category in enumerate(categories):
-        # Append the summary sentence with the reversed bar height
         summary_sentences.append(f"{category} has the corresponding bar height = {bar_heights[i]} on the Y-axis")
-        # Append the X-axis value
         x_axis_values.append(f"{category}")
     summary_sentences.append(f"Total heights (in terms of Y axis): {total_heights}")
 
@@ -66,47 +63,7 @@ def summarize_bar_graph(text, bar_heights):
 
     return summary_info
 
-
-# Function to summarize a bar graph
 def summarize_line_graph(text, image_file):
-
-    image = cv2.imread(image_file)
-
-    # Convert the image to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Apply Canny edge detection
-    edges = cv2.Canny(gray, 50, 150)
-
-    # Detect lines using Hough Line Transform
-    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold=50, minLineLength=50, maxLineGap=10)
-    total_slope = 0
-    count=0
-
-    # # Calculate slope of each line
-    # if lines is not None:
-    #     for line in lines:
-    #         x1, y1, x2, y2 = line[0]
-    #         if x2 != x1:  # Avoid division by zero
-    #             slope = -((y2 - y1) / (x2 - x1))
-    #             total_slope += slope
-
-    #     average_slope = total_slope
-    #     print("Slope of line:", floor(average_slope))
-
-    # summary_sentences=[]
-
-    # summary_info = {
-    #     "Title": "Line Graph Summary",
-    #     "Summary Sentences": summary_sentences,
-    #     "Slope of Graph": floor(total_slope)
-    # }
-
-    # return summary_info
-
-
-def summarize_line_graph(text, image_file):
-    # Read the image
     image = cv2.imread(image_file)
     print(text)
     # Convert the image to grayscale
@@ -151,37 +108,30 @@ def summarize_line_graph(text, image_file):
 
 # Function to generate PDF report
 def generate_pdf_report(summary_info, pdf_filename):
-    # Canvas for PDF generation
     c = canvas.Canvas(pdf_filename, pagesize=letter)
-
-    # Set font and font size
     c.setFont("Helvetica", 12)
-
-    # Set initial y-coordinate for text
     y = 700
 
-    # Write the summary information to the PDF
     for key, value in summary_info.items():
         if key == "Summary Sentences":
             for sentence in value:
                 c.drawString(100, y, sentence)
-                y -= 20  # Move down 20 units for the next line
+                y -= 20 
         else:
             c.drawString(100, y, f"{key}: {value}")
-            y -= 20  # Move down 20 units for the next line
+            y -= 20 
 
     # Save the PDF file
     c.save()
 
 if __name__ == "__main__":
-    # Parse command-line arguments
     if len(sys.argv) != 4:
         print("Usage: python abc.py summarize graph_type image.png")
         sys.exit(1)
 
     _, action, graph_type, image_file = sys.argv
 
-    # Load the image
+    # detect bar heights
     image = cv2.imread(image_file)
 
     # Convert BGR to HSV
