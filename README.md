@@ -14,14 +14,20 @@ The project takes the image of the graph and then reads it, extracts text and ot
 
 ### 3) Working
 Firstly you go to the  `main` folder. 
-Then in the terminal you can write the command 
+Then in the terminal you can write the command below to summarize bargraph
 ```terminal
 python abc.py summarize bargraph.png bargraph
 ```
+or write 
+```terminal
+python abc.py summarize linegraph.png linegraph
+```
+if you want to summarize linegraph.
+
 This will generate a pdf `summary_report.pdf` containing the entire summary.
 
 ### 4) Future Scope
-This project has a lot of scope and can be further worked upon. We aim to include other 2D graph in the coming month like - Scatter Plot, Line Graph, Area Graph etc. 
+This project has a lot of scope and can be further worked upon. Currently its incorporating bargraph and linegraph. In future we aim to include other 2D graph in the coming month like - Scatter Plot, Line Graph, Area Graph etc. 
 Further 3D and 4D graphs are can also be worked upon and summarized using our tool in future.
 
 ### 5) Motivation
